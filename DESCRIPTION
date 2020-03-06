@@ -1,0 +1,16 @@
+Package: sgexcrit
+Type: Package
+Title: Applies and Documents Inclusion and Exclusion Criteria
+Version: 0.0.0.9000
+Author: Stephen Gragg
+Maintainer: Stephen Gragg <graggsd@gmail.com>
+Description: This package is designed to assist with the application of
+    inclusion and exclusion criteria to clinical or epidemiologic datasets.
+    It also helps document the number of observations removed from the dataset
+    in a step-wise fashion.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Suggests: 
+    testthat (>= 2.1.0)
+RoxygenNote: 7.0.2
