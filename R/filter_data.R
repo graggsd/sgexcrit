@@ -37,8 +37,10 @@ get_crit_list <- function(filters) {
 mk_phase_template <- function(filters){
 
     # Construct table
-    phase_table_cols <- c("Phase", "Criteria", "Before(N)", "After(N)", "Removed(N)")
-    phase_out <- matrix("", nrow = length(filters), ncol = length(phase_table_cols))
+    phase_table_cols <- c("Phase", "Criteria", "Before(N)", "After(N)",
+                          "Removed(N)")
+    phase_out <- matrix("", nrow = length(filters),
+                        ncol = length(phase_table_cols))
     phase_out <- as.data.frame(phase_out, stringsAsFactors = FALSE)
     colnames(phase_out) <- phase_table_cols
 
@@ -122,7 +124,6 @@ rec_filters <- function(filter_fun, data,  phase_idx, cume_crit_idx) {
     return(list(n_tote = n_tote, n_phase = n_phase, phase_idx = phase_idx))
 }
 
-
 #' Apply and document inclusion/exclusion criteria
 #'
 #' This function is designed to assist in the application and documentation
@@ -164,7 +165,9 @@ rec_filters <- function(filter_fun, data,  phase_idx, cume_crit_idx) {
 #' need to be part of a named argument.
 #'
 #' @param data a \code{data.frame} containing a dataset to be filtered
-#' @param ... functions or lists of functions to be applied to \code{data}
+#' @param ... functions or lists of functions to be applied to \code{data},
+#' which must be able to take \code{data} as a function and remove rows
+#' failing a user-defined exclusion criteria
 #' @return A \code{list} containing the filtered dataset, a criteria-specific
 #' report, and a phase-specific report
 #' @export
@@ -198,13 +201,14 @@ filter_data <- function(data, ...) {
         # Create/reset phase_idx
         phase_idx <- NULL
 
-        # Criterium level #########################################################
-        if (is.list(filters[[i]])) { # For phase with multiple criteria ###########
+        # Criterium level #####################################################
+        if (is.list(filters[[i]])) { # For phase with multiple criteria #######
             for (j in 1:length(filters[[i]])) {
 
                 # Update phase_idx and calc N entries removed from
                 # total dataset and phase-specific data
-                crit_res <- rec_filters(filters[[i]][[j]], data, phase_idx, cume_crit_idx)
+                crit_res <- rec_filters(filters[[i]][[j]], data, phase_idx,
+                                        cume_crit_idx)
 
                 # Update phase index
                 phase_idx <- crit_res[["phase_idx"]]
@@ -215,11 +219,12 @@ filter_data <- function(data, ...) {
                 out_row_idx <- out_row_idx + 1
 
             }
-        } else { # For phase with single criteria #################################
+        } else { # For phase with single criteria ############################
 
             # Update phase_idx and calc N entries removed from
             # total dataset and phase-specific data
-            crit_res <- rec_filters(filters[[i]], data, phase_idx, cume_crit_idx)
+            crit_res <- rec_filters(filters[[i]], data, phase_idx,
+                                    cume_crit_idx)
 
             # Update phase index
             phase_idx <- crit_res[["phase_idx"]]
@@ -231,7 +236,7 @@ filter_data <- function(data, ...) {
             # Update which row we are recording on
             out_row_idx <- out_row_idx + 1
 
-        } # End Criteria Level ##################################################
+        } # End Criteria Level ################################################
 
         # Record the number of entries remaining before the data is filtered
         # during this phase

@@ -9,7 +9,9 @@ filter_data(data, ...)
 \arguments{
 \item{data}{a \code{data.frame} containing a dataset to be filtered}
 
-\item{...}{functions or lists of functions to be applied to \code{data}}
+\item{...}{functions or lists of functions to be applied to \code{data},
+which must be able to take \code{data} as a function and remove rows
+failing a user-defined exclusion criteria}
 }
 \value{
 A \code{list} containing the filtered dataset, a criteria-specific
