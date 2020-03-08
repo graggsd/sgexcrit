@@ -9,29 +9,6 @@ get_phase_names <- function(filters) {
     return(phase_names)
 }
 
-get_crit_list <- function(filters) {
-    out <- filters
-    for(i in 1:length(filters)) {
-        if (length(filters[[i]]) > 1) {
-            for(j in 1:length(filters[[i]])) {
-
-                # Fill criteria name
-                # If there are multiple filters in a given phase
-                out[[i]][[j]] <-
-                    ifelse((is.null(names(filters[[i]])) |
-                                names(filters[[i]])[j] == ""),
-                           NA,
-                           names(filters[[i]])[j])
-            }
-        } else if (!is.null(names(filters))) {
-            out[[i]] <- names(filters)[i]
-        } else {
-            out[[i]] <- NA
-        }
-    }
-    return(out)
-}
-
 # mk_phase_template <- function(filters){
 mk_phase_template <- function(filters, crit_list){
     # Construct table
@@ -47,7 +24,6 @@ mk_phase_template <- function(filters, crit_list){
     phase_out[, "Phase"] <- phase_names
 
     # Record criteria for each phase
-    # crit_list <- get_crit_list(filters)
     sum_crit <- function(x) {
         out <- as.character(unlist(x))
         out[is.na(out)] <- "NA"
@@ -202,7 +178,6 @@ filter_data <- function(data, ...) {
     }
 
     # Create output table templates
-    # phase_table <- mk_phase_template(filters)
     phase_table <- mk_phase_template(filters, crit_list)
     crit_table <- mk_crit_template(filters, crit_list)
 
