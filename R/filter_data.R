@@ -66,7 +66,8 @@ mk_crit_template <- function(filters, crit_list) {
     return(crit_out)
 }
 
-rec_filters <- function(filter_fun, data,  phase_idx, cume_crit_idx) {
+rec_filters <- function(filter_fun, data,  phase_idx, cume_crit_idx,
+                        filter_desc) {
 
     # Set up a system of reference
     data[, ncol(data) + 1] <- 1:nrow(data)
@@ -80,14 +81,14 @@ rec_filters <- function(filter_fun, data,  phase_idx, cume_crit_idx) {
     remove_idx <- setdiff(ref_idx, filt_data[, ncol(data)])
 
     # Check that filtering function has induced no other changes in data
-    # if(!identical(data[-remove_idx, ], filt_data)) {
-    #     stop("Filtering function did not have expected behavior")
-    # }
     data <- data[-remove_idx, ]
     rownames(data) <- NULL
     rownames(filt_data) <- NULL
     if(!identical(data, filt_data)) {
-        stop("Filtering function did not have expected behavior")
+        stop(paste0("Filtering function '", filter_desc,
+                    "' produced an unexpected output. All functions in '...' ",
+                    "should take 'data' as an argument and produce a similar ",
+                    "output, but with the same or fewer rows"), call. = FALSE)
     }
 
     # 2. -------
@@ -162,14 +163,31 @@ filter_data <- function(data, ...) {
     filters <- list(...)
     uneval_filters <- alist(...)
 
+    # Check that all elements of ... are lists or functions
+    if (!all(lapply(filters, class) %in% c("list", "function"))) {
+        stop(paste0("All objects passed to '...' must be of class 'function' ",
+                    "or 'list'"), call. = FALSE)
+    }
+
+    # Check that lists passed to ... contain only functions
+    idx <- unlist(lapply(filters, is.list))
+    if (sum(idx) != 0) {
+        for (a_list in filters[idx]) {
+            if(any(unlist(lapply(a_list, class)) != "function")) {
+                stop(paste0("All lists passed to '...' ",
+                            "must have a depth = 1 and be composed ",
+                            "entirely of functions"))
+            }
+        }
+    }
+
+    # Create a list of criteria names mirroring the structure of
+    # ..., such that it may be referenced when building output tables
     limit_string <- function(x) {
         ifelse(nchar(x) < 38,
                x,
                paste0(substr(x, 1, 37), "..."))
     }
-
-    # Create a list of criteria names mirroring the structure of
-    # ..., such that it may be referenced when building output tables
     uneval_filters <- eval(substitute(alist(...)))
     crit_list <- filters
     for(i in 1:length(filters)) {
@@ -216,7 +234,7 @@ filter_data <- function(data, ...) {
                 # Update phase_idx and calc N entries removed from
                 # total dataset and phase-specific data
                 crit_res <- rec_filters(filters[[i]][[j]], data, phase_idx,
-                                        cume_crit_idx)
+                                        cume_crit_idx, crit_list[[i]][[j]])
 
                 # Update phase index
                 phase_idx <- crit_res[["phase_idx"]]
@@ -232,7 +250,7 @@ filter_data <- function(data, ...) {
             # Update phase_idx and calc N entries removed from
             # total dataset and phase-specific data
             crit_res <- rec_filters(filters[[i]], data, phase_idx,
-                                    cume_crit_idx)
+                                    cume_crit_idx, crit_list[[i]])
 
             # Update phase index
             phase_idx <- crit_res[["phase_idx"]]
