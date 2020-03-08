@@ -163,6 +163,10 @@ filter_data <- function(data, ...) {
     filters <- list(...)
     uneval_filters <- alist(...)
 
+    if(!is.data.frame(data)) {
+        stop("'data' must be of class 'data.frame'", call. = FALSE)
+    }
+
     # Check that all elements of ... are lists or functions
     if (!all(lapply(filters, class) %in% c("list", "function"))) {
         stop(paste0("All objects passed to '...' must be of class 'function' ",
@@ -176,7 +180,7 @@ filter_data <- function(data, ...) {
             if(any(unlist(lapply(a_list, class)) != "function")) {
                 stop(paste0("All lists passed to '...' ",
                             "must have a depth = 1 and be composed ",
-                            "entirely of functions"))
+                            "entirely of functions", call. = FALSE))
             }
         }
     }

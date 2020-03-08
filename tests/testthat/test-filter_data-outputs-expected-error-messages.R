@@ -21,3 +21,8 @@ test_that("when 'list' supplied to '...' is too deeply nested", {
     expect_error(filter_data(mtcars, list(list(good_fun))))
     expect_error(filter_data(mtcars, list(good_fun, list(good_fun))))
 })
+
+
+test_that("when 'data' is not of class 'data.frame'", {
+    expect_error(filter_data(matrix(mtcars), good_fun))
+})
