@@ -177,6 +177,9 @@ filter_data <- function(data, ...) {
                x,
                paste0(substr(x, 1, 37), "..."))
     }
+
+    # Create a list of criteria names mirroring the structure of
+    # ..., such that it may be referenced when building output tables
     uneval_filters <- eval(substitute(alist(...)))
     crit_list <- filters
     for(i in 1:length(filters)) {
