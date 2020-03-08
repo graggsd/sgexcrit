@@ -12,30 +12,28 @@ get_phase_names <- function(filters) {
 get_crit_list <- function(filters) {
     out <- filters
     for(i in 1:length(filters)) {
-        for(j in 1:length(filters[[i]])) {
+        if (length(filters[[i]]) > 1) {
+            for(j in 1:length(filters[[i]])) {
 
-            # Fill criteria name
-            # If there are multiple filters in a given phase
-            if (length(filters[[i]]) > 1) {
-
+                # Fill criteria name
+                # If there are multiple filters in a given phase
                 out[[i]][[j]] <-
                     ifelse((is.null(names(filters[[i]])) |
                                 names(filters[[i]])[j] == ""),
                            NA,
                            names(filters[[i]])[j])
-
-            } else if (!is.null(names(filters))) {
-                out[[i]] <- names(filters)[i]
-            } else {
-                out[[i]] <- NA
             }
+        } else if (!is.null(names(filters))) {
+            out[[i]] <- names(filters)[i]
+        } else {
+            out[[i]] <- NA
         }
     }
     return(out)
 }
 
-mk_phase_template <- function(filters){
-
+# mk_phase_template <- function(filters){
+mk_phase_template <- function(filters, crit_list){
     # Construct table
     phase_table_cols <- c("Phase", "Criteria", "Before(N)", "After(N)",
                           "Removed(N)")
@@ -49,7 +47,7 @@ mk_phase_template <- function(filters){
     phase_out[, "Phase"] <- phase_names
 
     # Record criteria for each phase
-    crit_list <- get_crit_list(filters)
+    # crit_list <- get_crit_list(filters)
     sum_crit <- function(x) {
         out <- as.character(unlist(x))
         out[is.na(out)] <- "NA"
@@ -61,7 +59,7 @@ mk_phase_template <- function(filters){
     return(phase_out)
 }
 
-mk_crit_template <- function(filters) {
+mk_crit_template <- function(filters, crit_list) {
     # Create skeleton table
     crit_table_cols <- c("Phase", "Criteria",
                          "Excluded Complete(N)",
@@ -83,18 +81,8 @@ mk_crit_template <- function(filters) {
             crit_out[row_idx, "Phase"] <- phase_names[i]
 
             # Fill criteria name
-            if (length(filters[[i]]) > 1) {
-                if (is.null(names(filters[[i]])) |
-                    names(filters[[i]])[j] == ""){
-                    crit_out[row_idx, "Criteria"] <- NA
-                } else {
-                    crit_out[row_idx, "Criteria"] <- names(filters[[i]])[j]
-                }
-            } else if (!is.null(names(filters))) {
-                crit_out[row_idx, "Criteria"] <- names(filters)[i]
-            } else {
-                crit_out[row_idx, "Criteria"] <- NA
-            }
+            crit_out[row_idx, "Criteria"] <- crit_list[[i]][[j]]
+
             # Advance to the next row
             row_idx <- row_idx + 1
         }
@@ -127,11 +115,11 @@ rec_filters <- function(filter_fun, data,  phase_idx, cume_crit_idx) {
 #' Apply and document inclusion/exclusion criteria
 #'
 #' This function is designed to assist in the application and documentation
-#' of inclusion and exclusion criteria to a clinical/epidemiologic datasets.
+#' of inclusion and exclusion criteria to clinical or epidemiologic datasets.
 #' It allows the analyst to define a series of functions, each corresponding
-#' to one inclusion/exclusion criteria, and then apply them to the dataset.
+#' to one criteria, and then apply them to the dataset.
 #' It is expected that in many analyses certain inclusion/exclusion criteria
-#' or groups of inclusion/exclusion may be applied sequentially. This function
+#' or groups of criteria may be applied sequentially. This function
 #' allows analysts to specify filtering functions in \code{...} in the order
 #' that they should be applied. The subsequent output of \code{filter_data}
 #' is a \code{list} containing the newly filtered
@@ -159,15 +147,13 @@ rec_filters <- function(filter_fun, data,  phase_idx, cume_crit_idx) {
 #' captured by \code{...}. Functions supplied directly to \code{...}
 #' will be treated as their own individual phase in the data-filtering process.
 #'
-#' Each function supplied to \code{...} should be specified as a named argument
-#' or a named list. Each name should describe the criteria which the function
-#' applies. Lists of functions supplied to \code{...}, do not necessarily
-#' need to be part of a named argument.
+#' Descriptions of inclusion/exclusion criteria may be specified by supplying
+#' functions to \code{...} as named arguments or named lists.
 #'
 #' @param data a \code{data.frame} containing a dataset to be filtered
-#' @param ... functions or lists of functions to be applied to \code{data},
-#' which must be able to take \code{data} as a function and remove rows
-#' failing a user-defined exclusion criteria
+#' @param ... functions or lists of functions to be applied to \code{data}. Each
+#' function must be able to take \code{data} as an argument and remove
+#' observations (rows) failing a user-defined exclusion criteria
 #' @return A \code{list} containing the filtered dataset, a criteria-specific
 #' report, and a phase-specific report
 #' @export
@@ -177,17 +163,45 @@ rec_filters <- function(filter_fun, data,  phase_idx, cume_crit_idx) {
 #'                    stringsAsFactors = FALSE)
 #' filter_data(data,
 #'             list(remove_A_equals_2 = function(x) x[x[, 1] != 2, ],
-#'                            remove_A_equals_8 = function(x) x[x[, 1] != 8, ]),
+#'                  remove_A_equals_8 = function(x) x[x[, 1] != 8, ]),
 #'             list(remove_B_equals_E = function(x) x[x[, 2] != "E", ]))
 #' }
 filter_data <- function(data, ...) {
 
     # Convert ... into a list
     filters <- list(...)
+    uneval_filters <- alist(...)
+
+    limit_string <- function(x) {
+        ifelse(nchar(x) < 38,
+               x,
+               paste0(substr(x, 1, 37), "..."))
+    }
+    uneval_filters <- eval(substitute(alist(...)))
+    crit_list <- filters
+    for(i in 1:length(filters)) {
+        if (length(filters[[i]]) > 1) {
+            for(j in 1:length(filters[[i]])) {
+                if (is.null(names(filters[[i]])) ||
+                    names(filters[[i]])[j] == "") {
+                    crit_list[[i]][[j]] <-
+                        limit_string(
+                            as.character(as.list(uneval_filters[[i]])[-1])[j])
+                } else {
+                    crit_list[[i]][[j]] <- names(filters[[i]])[j]
+                }
+            }
+        } else if (!is.null(names(filters)) && names(filters)[i] != "") {
+            crit_list[[i]] <- names(filters)[i]
+        } else {
+            crit_list[[i]] <- limit_string(as.character(uneval_filters[[i]]))
+        }
+    }
 
     # Create output table templates
-    phase_table <- mk_phase_template(filters)
-    crit_table <- mk_crit_template(filters)
+    # phase_table <- mk_phase_template(filters)
+    phase_table <- mk_phase_template(filters, crit_list)
+    crit_table <- mk_crit_template(filters, crit_list)
 
     ############### Create starting indexes ##############
     # Create empty index for all records to be eliminated

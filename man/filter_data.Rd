@@ -9,9 +9,9 @@ filter_data(data, ...)
 \arguments{
 \item{data}{a \code{data.frame} containing a dataset to be filtered}
 
-\item{...}{functions or lists of functions to be applied to \code{data},
-which must be able to take \code{data} as a function and remove rows
-failing a user-defined exclusion criteria}
+\item{...}{functions or lists of functions to be applied to \code{data}. Each
+function must be able to take \code{data} as an argument and remove
+observations (rows) failing a user-defined exclusion criteria}
 }
 \value{
 A \code{list} containing the filtered dataset, a criteria-specific
@@ -19,11 +19,11 @@ report, and a phase-specific report
 }
 \description{
 This function is designed to assist in the application and documentation
-of inclusion and exclusion criteria to a clinical/epidemiologic datasets.
+of inclusion and exclusion criteria to clinical or epidemiologic datasets.
 It allows the analyst to define a series of functions, each corresponding
-to one inclusion/exclusion criteria, and then apply them to the dataset.
+to one criteria, and then apply them to the dataset.
 It is expected that in many analyses certain inclusion/exclusion criteria
-or groups of inclusion/exclusion may be applied sequentially. This function
+or groups of criteria may be applied sequentially. This function
 allows analysts to specify filtering functions in \code{...} in the order
 that they should be applied. The subsequent output of \code{filter_data}
 is a \code{list} containing the newly filtered
@@ -52,10 +52,8 @@ Several criteria may be applied simultaneously as part of a single filtering
 captured by \code{...}. Functions supplied directly to \code{...}
 will be treated as their own individual phase in the data-filtering process.
 
-Each function supplied to \code{...} should be specified as a named argument
-or a named list. Each name should describe the criteria which the function
-applies. Lists of functions supplied to \code{...}, do not necessarily
-need to be part of a named argument.
+Descriptions of inclusion/exclusion criteria may be specified by supplying
+functions to \code{...} as named arguments or named lists.
 }
 \examples{
 \dontrun{
@@ -63,7 +61,7 @@ data <- data.frame(A = 1:10, B = LETTERS[1:10],
                    stringsAsFactors = FALSE)
 filter_data(data,
             list(remove_A_equals_2 = function(x) x[x[, 1] != 2, ],
-                           remove_A_equals_8 = function(x) x[x[, 1] != 8, ]),
+                 remove_A_equals_8 = function(x) x[x[, 1] != 8, ]),
             list(remove_B_equals_E = function(x) x[x[, 2] != "E", ]))
 }
 }

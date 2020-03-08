@@ -78,3 +78,28 @@ test_that("with no lists", {
     expect_equal(out[[2]][, 4], rep("1", 4))
 })
 
+test_that("with no function names", {
+    criteria_names_out <- c("remove_A_equals_2", "remove_A_equals_8",
+                            "remove_B_equals_E", "remove_B_equals_D")
+
+    expect_equal(filter_data(data,  remove_A_equals_2,
+                             remove_A_equals_8, remove_B_equals_E,
+                             remove_B_equals_D)[[2]][, 2],
+                 criteria_names_out)
+
+    expect_equal(filter_data(data,
+                             phase_1 = list(remove_A_equals_2,
+                                            remove_A_equals_8),
+                             phase_2 = list(remove_B_equals_E,
+                                            remove_B_equals_D))[[2]][, 2],
+                 criteria_names_out)
+
+    expect_equal(filter_data(data,
+                             list(remove_A_equals_2,
+                                  remove_A_equals_8,
+                                  remove_B_equals_E),
+                             remove_B_equals_D)[[2]][, 2],
+                 criteria_names_out)
+})
+
+
