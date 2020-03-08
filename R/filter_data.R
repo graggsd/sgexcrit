@@ -72,9 +72,23 @@ rec_filters <- function(filter_fun, data,  phase_idx, cume_crit_idx) {
     data[, ncol(data) + 1] <- 1:nrow(data)
     ref_idx <- 1:nrow(data)
 
+    # Create a filtered dataset
+    filt_data <- filter_fun(data)
+
     # 1. ------
     # Row IDs to remove (last column in data will match ref_idx)
-    remove_idx <- setdiff(ref_idx, filter_fun(data)[, ncol(data)])
+    remove_idx <- setdiff(ref_idx, filt_data[, ncol(data)])
+
+    # Check that filtering function has induced no other changes in data
+    # if(!identical(data[-remove_idx, ], filt_data)) {
+    #     stop("Filtering function did not have expected behavior")
+    # }
+    data <- data[-remove_idx, ]
+    rownames(data) <- NULL
+    rownames(filt_data) <- NULL
+    if(!identical(data, filt_data)) {
+        stop("Filtering function did not have expected behavior")
+    }
 
     # 2. -------
     # Calc # to remove a) total dataset, b) phase-appropriate dataset
@@ -173,7 +187,9 @@ filter_data <- function(data, ...) {
         } else if (!is.null(names(filters)) && names(filters)[i] != "") {
             crit_list[[i]] <- names(filters)[i]
         } else {
-            crit_list[[i]] <- limit_string(as.character(uneval_filters[[i]]))
+            crit_list[[i]] <-
+                limit_string(deparse(uneval_filters[[i]],
+                                     width.cutoff = 40, nlines = 1))
         }
     }
 
