@@ -9,6 +9,10 @@ get_phase_names <- function(filters) {
     return(phase_names)
 }
 
+get_argument_names <- function(fun) {
+    return(names(as.list(args(fun))))
+}
+
 # mk_phase_template <- function(filters){
 mk_phase_template <- function(filters, crit_list){
     # Construct table
@@ -66,15 +70,37 @@ mk_crit_template <- function(filters, crit_list) {
     return(crit_out)
 }
 
+# TODO come back to this and figure out how to implement the argument list
+# TODO update references later in function to include an argument list
 rec_filters <- function(filter_fun, data,  phase_idx, cume_crit_idx,
-                        filter_desc) {
+                        filter_desc, args_list = NULL) {
+
+    # NOTE when adding functionality to be more specific with arguments -
+        # consider
+        # using names of args_list and names of functions being called to
+        # specify to specify when and where to use arguments. This will be a
+        # good place to subset args_list to a set of argument pertinent for
+        # each function called by filter_data -- will have to figure out how to
+        # extract or capture function names uniformly though. This might be
+        # done in parallel with the sort of
+        # list structures we've been making throughout other parts of this
+        # function.
+    # IDEA could also make it optional to provide argument names not tied
+        # to individual functions to reduce the amount of coding one has to do.
+
+    # Get all argument names from the input function
+    arg_idx <- names(args_list) %in% get_argument_names(filter_fun)
+    args_list <- args_list[arg_idx]
 
     # Set up a system of reference
     data[, ncol(data) + 1] <- 1:nrow(data)
     ref_idx <- 1:nrow(data)
 
     # Create a filtered dataset
-    filt_data <- filter_fun(data)
+    # filt_data <- filter_fun(data)
+    filt_data <- do.call(filter_fun,
+                         args = append(list(data),
+                                       args_list))
 
     # 1. ------
     # Row IDs to remove (last column in data will match ref_idx)
@@ -157,11 +183,10 @@ rec_filters <- function(filter_fun, data,  phase_idx, cume_crit_idx,
 #'                  remove_A_equals_8 = function(x) x[x[, 1] != 8, ]),
 #'             list(remove_B_equals_E = function(x) x[x[, 2] != "E", ]))
 #' }
-filter_data <- function(data, ...) {
+filter_data <- function(data, ..., args_list = NULL) {
     # TODO create ability to take function arguments within functions provided by ...
     # Convert ... into a list
     filters <- list(...)
-    uneval_filters <- alist(...)
 
     if(!is.data.frame(data)) {
         stop("'data' must be of class 'data.frame'", call. = FALSE)
@@ -194,6 +219,7 @@ filter_data <- function(data, ...) {
     }
     uneval_filters <- eval(substitute(alist(...)))
     crit_list <- filters
+
     for(i in 1:length(filters)) {
         if (length(filters[[i]]) > 1) {
             for(j in 1:length(filters[[i]])) {
@@ -238,7 +264,8 @@ filter_data <- function(data, ...) {
                 # Update phase_idx and calc N entries removed from
                 # total dataset and phase-specific data
                 crit_res <- rec_filters(filters[[i]][[j]], data, phase_idx,
-                                        cume_crit_idx, crit_list[[i]][[j]])
+                                        cume_crit_idx, crit_list[[i]][[j]],
+                                        args_list = args_list)
 
                 # Update phase index
                 phase_idx <- crit_res[["phase_idx"]]
@@ -254,7 +281,8 @@ filter_data <- function(data, ...) {
             # Update phase_idx and calc N entries removed from
             # total dataset and phase-specific data
             crit_res <- rec_filters(filters[[i]], data, phase_idx,
-                                    cume_crit_idx, crit_list[[i]])
+                                    cume_crit_idx, crit_list[[i]],
+                                    args_list = args_list)
 
             # Update phase index
             phase_idx <- crit_res[["phase_idx"]]
@@ -289,4 +317,3 @@ filter_data <- function(data, ...) {
                 phase_table = phase_table)
     return(out)
 }
-
