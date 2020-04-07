@@ -158,7 +158,7 @@ rec_filters <- function(filter_fun, data,  phase_idx, cume_crit_idx,
 #'             list(remove_B_equals_E = function(x) x[x[, 2] != "E", ]))
 #' }
 filter_data <- function(data, ...) {
-
+    # TODO create ability to take function arguments within functions provided by ...
     # Convert ... into a list
     filters <- list(...)
     uneval_filters <- alist(...)
